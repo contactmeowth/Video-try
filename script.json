@@ -1,0 +1,66 @@
+{
+  "title": "The Last Forest",
+  "output_filename": "the_last_forest.mp4",
+  "resolution": "1280x720",
+  "default_voice": "af_heart",
+  "scenes": [
+    {
+      "id": 1,
+      "type": "ai_image",
+      "image_prompt": "A vast ancient forest at golden hour, tall trees with shafts of light breaking through the canopy, misty atmosphere, cinematic wide shot, photorealistic",
+      "narration": "Long before cities rose and roads were built, there existed a forest older than memory itself. Its roots ran deeper than the rivers, and its canopy touched the edge of the sky.",
+      "mood": "epic",
+      "voice": "af_heart",
+      "transition": "fade"
+    },
+    {
+      "id": 2,
+      "type": "ai_image",
+      "image_prompt": "A young girl with a lantern walking alone through a dark magical forest at night, fireflies glowing, fairy tale atmosphere, digital art",
+      "narration": "Maya had heard the stories from her grandmother. Every elder in the village spoke of the forest spirit — a guardian that appeared only when the forest was in danger.",
+      "mood": "mysterious",
+      "voice": "af_heart",
+      "transition": "fade"
+    },
+    {
+      "id": 3,
+      "type": "static_bg",
+      "background_color": "#0a0a1a",
+      "overlay_text": "Three days before the machines arrived...",
+      "text_style": "title",
+      "narration": "Three days before the machines arrived, Maya saw it for the first time.",
+      "mood": "tense",
+      "voice": "af_heart",
+      "transition": "cut"
+    },
+    {
+      "id": 4,
+      "type": "ai_image",
+      "image_prompt": "A glowing white deer with antlers made of branches and leaves standing in a misty forest clearing, magical realism, ethereal lighting",
+      "narration": "A deer — no, something more than a deer. It stood at the edge of the clearing, its antlers twisted into the shape of ancient trees. Its eyes held centuries of silence.",
+      "mood": "wonder",
+      "voice": "af_heart",
+      "transition": "fade"
+    },
+    {
+      "id": 5,
+      "type": "ai_image",
+      "image_prompt": "Industrial bulldozers at the edge of a forest, environmental destruction, dramatic stormy sky, contrast between nature and machines, cinematic",
+      "narration": "By morning, the sound of engines filled the valley. The company had permits. The government had signed. And the forest — the forest had only Maya.",
+      "mood": "dramatic",
+      "voice": "af_heart",
+      "transition": "fade"
+    },
+    {
+      "id": 6,
+      "type": "static_bg",
+      "background_color": "#0d1f0d",
+      "overlay_text": "Some stories don't have easy endings.",
+      "text_style": "quote",
+      "narration": "Some stories don't have easy endings. But every story that is told — is a forest that survives.",
+      "mood": "reflective",
+      "voice": "af_heart",
+      "transition": "fade"
+    }
+  ]
+}
