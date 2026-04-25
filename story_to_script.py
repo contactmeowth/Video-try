@@ -41,6 +41,9 @@ def generate_script(story_idea: str, num_scenes: int = 15) -> dict:
         print("❌ Set GEMINI_API_KEY environment variable")
         sys.exit(1)
 
+    # Clean the API key just in case there are hidden spaces/newlines from GitHub Secrets
+    api_key = api_key.strip()
+
     prompt = (
         f"Topic/Chapters to cover: {story_idea}\n\n"
         f"Generate exactly {num_scenes} scenes for a Manhwa recap video.\n"
@@ -48,8 +51,10 @@ def generate_script(story_idea: str, num_scenes: int = 15) -> dict:
 
     print("🧠 Fetching script from Gemini via REST API...")
     
-    # Direct API Call - Just like your other script
-    url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=){api_key}"
+    # URL ko split kar diya taaki GitHub editor isko auto-format na kar paye
+    base_url = "https://" + "generativelanguage.googleapis.com"
+    endpoint = "/v1beta/models/gemini-2.0-flash:generateContent?key="
+    url = base_url + endpoint + api_key
     
     payload = {
         "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
@@ -66,7 +71,7 @@ def generate_script(story_idea: str, num_scenes: int = 15) -> dict:
             
         text = res['candidates'][0]['content']['parts'][0]['text']
         
-        # Clean JSON like your other script
+        # Clean JSON
         clean = re.sub(r'```json\s*|\s*```', '', text).strip()
         
         try:
