@@ -53,7 +53,7 @@ def generate_script(story_idea: str, num_scenes: int = 15) -> dict:
     
     # Naya syntax content generate karne ke liye
     response = client.models.generate_content(
-        model='gemini-1.5-flash',
+        model='gemini-2.0-flash',  # Yahan 1.5 ki jagah 2.0 kar diya
         contents=prompt,
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
