@@ -3,7 +3,8 @@ import os
 import sys
 import json
 import argparse
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 SYSTEM_PROMPT = """
 You are a creative video script writer for a Manhwa Recap channel. Given a topic/chapter, generate a JSON script for an AI video pipeline. 
@@ -40,21 +41,29 @@ def generate_script(story_idea: str, num_scenes: int = 15) -> dict:
         print("❌ Set GEMINI_API_KEY environment variable")
         sys.exit(1)
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    # Naya SDK initialization
+    client = genai.Client(api_key=api_key)
 
     prompt = (
         f"Topic/Chapters to cover: {story_idea}\n\n"
         f"Generate exactly {num_scenes} scenes for a Manhwa recap video.\n"
     )
 
-    response = model.generate_content(
-        prompt,
-        generation_config={"temperature": 0.8},
-        system_instruction=SYSTEM_PROMPT
+    print("🧠 Fetching script from Gemini...")
+    
+    # Naya syntax content generate karne ke liye
+    response = client.models.generate_content(
+        model='gemini-1.5-flash',
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            temperature=0.8,
+        )
     )
 
     raw = response.text.strip()
+    
+    # JSON formatting fix
     if raw.startswith("```"):
         raw = raw.split("\n", 1)[1]
     if raw.endswith("```"):
@@ -67,6 +76,8 @@ if __name__ == "__main__":
     parser.add_argument("idea", help="Story idea")
     parser.add_argument("--scenes", type=int, default=15)
     args = parser.parse_args()
+    
     script = generate_script(args.idea, args.scenes)
+    
     with open("script.json", "w") as f:
         json.dump(script, f, indent=2, ensure_ascii=False)
