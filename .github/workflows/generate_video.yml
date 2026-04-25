@@ -30,7 +30,8 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install google-generativeai
+          pip install google-genai
+
 
       - name: 🎬 Run Master AI Engine
         env:
