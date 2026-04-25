@@ -36,7 +36,6 @@ Rules:
 """
 
 def generate_script(story_idea: str, num_scenes: int = 15) -> dict:
-    # Ab hum GROQ_KEY dhoondhenge
     api_key = os.environ.get("GROQ_KEY")
     if not api_key:
         print("❌ Set GROQ_KEY environment variable")
@@ -51,7 +50,10 @@ def generate_script(story_idea: str, num_scenes: int = 15) -> dict:
 
     print("🧠 Fetching script from Groq API (LLaMA 3)...")
     
-    url = "[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)"
+    # URL split trick to avoid GitHub auto-formatting
+    base_url = "https://" + "api.groq.com"
+    endpoint = "/openai/v1/chat/completions"
+    url = base_url + endpoint
     
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -83,7 +85,6 @@ def generate_script(story_idea: str, num_scenes: int = 15) -> dict:
         try:
             return json.loads(clean)
         except json.JSONDecodeError:
-            # Agar valid JSON nahi hai, toh brackets extract karne ka try karega
             match = re.search(r'\{[\s\S]*\}', clean)
             if match:
                 return json.loads(match.group())
