@@ -36,12 +36,12 @@ Rules:
 """
 
 def generate_script(story_idea: str, num_scenes: int = 15) -> dict:
-    api_key = os.environ.get("GEMINI_API_KEY")
+    # Ab hum GROQ_KEY dhoondhenge
+    api_key = os.environ.get("GROQ_KEY")
     if not api_key:
-        print("❌ Set GEMINI_API_KEY environment variable")
+        print("❌ Set GROQ_KEY environment variable")
         sys.exit(1)
 
-    # Clean the API key just in case there are hidden spaces/newlines from GitHub Secrets
     api_key = api_key.strip()
 
     prompt = (
@@ -49,41 +49,48 @@ def generate_script(story_idea: str, num_scenes: int = 15) -> dict:
         f"Generate exactly {num_scenes} scenes for a Manhwa recap video.\n"
     )
 
-    print("🧠 Fetching script from Gemini via REST API...")
+    print("🧠 Fetching script from Groq API (LLaMA 3)...")
     
-    # URL ko split kar diya taaki GitHub editor isko auto-format na kar paye
-    base_url = "https://" + "generativelanguage.googleapis.com"
-    endpoint = "/v1beta/models/gemini-2.0-flash:generateContent?key="
-    url = base_url + endpoint + api_key
+    url = "[https://api.groq.com/openai/v1/chat/completions](https://api.groq.com/openai/v1/chat/completions)"
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
     
     payload = {
-        "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.8}
+        "model": "llama-3.3-70b-versatile",
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.7,
+        "max_tokens": 8192
     }
 
     try:
-        res = requests.post(url, json=payload, timeout=90).json()
+        res = requests.post(url, headers=headers, json=payload, timeout=90).json()
         
         if 'error' in res:
             err_msg = res['error'].get('message', 'Unknown Error')
             raise Exception(f"API_ERROR: {err_msg}")
             
-        text = res['candidates'][0]['content']['parts'][0]['text']
+        text = res['choices'][0]['message']['content']
         
-        # Clean JSON
+        # Clean JSON markdown fences
         clean = re.sub(r'```json\s*|\s*```', '', text).strip()
         
         try:
             return json.loads(clean)
         except json.JSONDecodeError:
+            # Agar valid JSON nahi hai, toh brackets extract karne ka try karega
             match = re.search(r'\{[\s\S]*\}', clean)
             if match:
                 return json.loads(match.group())
-            raise Exception("JSON_PARSE_FAILED")
+            raise Exception("JSON_PARSE_FAILED: " + clean[:200])
 
     except Exception as e:
-        print(f"❌ Failed to get script from Gemini: {e}")
+        print(f"❌ Failed to get script from Groq: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
