@@ -3,8 +3,8 @@ import os
 import sys
 import json
 import argparse
-from google import genai
-from google.genai import types
+import requests
+import re
 
 SYSTEM_PROMPT = """
 You are a creative video script writer for a Manhwa Recap channel. Given a topic/chapter, generate a JSON script for an AI video pipeline. 
@@ -41,35 +41,45 @@ def generate_script(story_idea: str, num_scenes: int = 15) -> dict:
         print("❌ Set GEMINI_API_KEY environment variable")
         sys.exit(1)
 
-    # Naya SDK initialization
-    client = genai.Client(api_key=api_key)
-
     prompt = (
         f"Topic/Chapters to cover: {story_idea}\n\n"
         f"Generate exactly {num_scenes} scenes for a Manhwa recap video.\n"
     )
 
-    print("🧠 Fetching script from Gemini...")
+    print("🧠 Fetching script from Gemini via REST API...")
     
-    # Naya syntax content generate karne ke liye
-    response = client.models.generate_content(
-        model='gemini-2.0-flash',  # Yahan 1.5 ki jagah 2.0 kar diya
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            temperature=0.8,
-        )
-    )
-
-    raw = response.text.strip()
+    # Direct API Call - Just like your other script
+    url = f"[https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=){api_key}"
     
-    # JSON formatting fix
-    if raw.startswith("```"):
-        raw = raw.split("\n", 1)[1]
-    if raw.endswith("```"):
-        raw = raw.rsplit("```", 1)[0]
+    payload = {
+        "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.8}
+    }
 
-    return json.loads(raw.strip())
+    try:
+        res = requests.post(url, json=payload, timeout=90).json()
+        
+        if 'error' in res:
+            err_msg = res['error'].get('message', 'Unknown Error')
+            raise Exception(f"API_ERROR: {err_msg}")
+            
+        text = res['candidates'][0]['content']['parts'][0]['text']
+        
+        # Clean JSON like your other script
+        clean = re.sub(r'```json\s*|\s*```', '', text).strip()
+        
+        try:
+            return json.loads(clean)
+        except json.JSONDecodeError:
+            match = re.search(r'\{[\s\S]*\}', clean)
+            if match:
+                return json.loads(match.group())
+            raise Exception("JSON_PARSE_FAILED")
+
+    except Exception as e:
+        print(f"❌ Failed to get script from Gemini: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
