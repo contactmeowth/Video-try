@@ -1,0 +1,110 @@
+name: 🎬 AI Video Pipeline
+
+on:
+  push:
+    paths:
+      - 'script.json'          # triggers when you update the main script
+      - 'scripts/*.json'       # OR any script in the scripts/ folder
+  workflow_dispatch:           # manual trigger from GitHub UI
+    inputs:
+      script_file:
+        description: 'Script JSON file to use (e.g. scripts/episode2.json)'
+        required: false
+        default: 'script.json'
+
+jobs:
+  generate-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      # ── 1. Checkout repo ──────────────────────────────
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Setup Python ───────────────────────────────
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # ── 3. Install system deps ────────────────────────
+      - name: 🔧 Install FFmpeg & fonts
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            ffmpeg \
+            fonts-dejavu-core \
+            fonts-liberation \
+            --no-install-recommends
+
+      # ── 4. Install Python deps ────────────────────────
+      - name: 📦 Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ── 5. Determine which script to use ─────────────
+      - name: 📋 Determine script file
+        id: script
+        run: |
+          # Use input if manual trigger, else detect changed file
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SCRIPT="${{ github.event.inputs.script_file }}"
+          else
+            # Find the most recently changed script json
+            SCRIPT=$(git diff --name-only HEAD~1 HEAD -- '*.json' 'scripts/*.json' | head -1)
+            if [ -z "$SCRIPT" ]; then
+              SCRIPT="script.json"
+            fi
+          fi
+          echo "Using script: $SCRIPT"
+          echo "file=$SCRIPT" >> $GITHUB_OUTPUT
+
+      # ── 6. Run the video pipeline ─────────────────────
+      - name: 🎬 Generate video
+        run: |
+          python generate_video.py "${{ steps.script.outputs.file }}"
+
+      # ── 7. Upload video as artifact ───────────────────
+      - name: 📤 Upload video artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-video-${{ github.run_number }}
+          path: output/*.mp4
+          retention-days: 14
+
+      # ── 8. Commit output back to repo (optional) ──────
+      - name: 💾 Commit output video to repo
+        continue-on-error: true
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add output/*.mp4 || true
+          git diff --cached --quiet || git commit -m "🎬 Auto-generated video [run #${{ github.run_number }}]"
+          git push || true
+
+      # ── 9. Telegram notification ──────────────────────
+      - name: 📱 Telegram notification
+        if: always()
+        env:
+          TG_TOKEN:  ${{ secrets.TG_TOKEN }}
+          USER_ID:   ${{ secrets.USER_ID }}
+        run: |
+          STATUS="${{ job.status }}"
+          SCRIPT="${{ steps.script.outputs.file }}"
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          if [ "$STATUS" = "success" ]; then
+            EMOJI="✅"
+            MSG="🎬 Video generated successfully!%0AScript: ${SCRIPT}%0ARun: ${RUN_URL}"
+          else
+            EMOJI="❌"
+            MSG="❌ Video generation FAILED%0AScript: ${SCRIPT}%0ARun: ${RUN_URL}"
+          fi
+
+          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            -d chat_id="${USER_ID}" \
+            -d text="${MSG}" \
+            -d parse_mode="HTML" || true
